@@ -11,5 +11,6 @@ Seating-Plan algo for Jesus College MCR superhalls
 
 ### Step 2
 
-4. Once the form closes, run the script on a csv of the form responses.
+4. Once the form closes, run the script on a csv of the form responses and the original list uploaded to the form.
+    5. Both list are required as the script will make sure people not in a table are still seated in hall.    
 5. Done.
