@@ -9,8 +9,8 @@
 # Name of input file from google form
   input2 <- "toR2.csv"
 # Fellows (reserved seats)
-  fellow_HT <- 2
-  fellow_2HT <- 2
+  fellow_HT <- 1
+  fellow_2HT <- 1
 
 ################################
 ## Seats in hall              ##
@@ -23,11 +23,13 @@ north1 <- 8
 north2 <- 8
 north3 <- 8
 north4 <- 6
+north5 <- 6
 
 south1 <- 8
 south2 <- 8
 south3 <- 8
 south4 <- 6
+south5 <- 6
 
 centretable <- 36
 
@@ -39,10 +41,12 @@ allseats <- c(
   rep("north2",north2),
   rep("north3",north3),
   rep("north4",north4),
+  rep("north5",north5),
   rep("south1",south1),
   rep("south2",south2),
   rep("south3",south3),
   rep("south4",south4),
+  rep("south5",south5),
   rep("centretable",centretable)
 )
 
@@ -86,7 +90,7 @@ groups <- data.frame(t_names, t_group,
   groups <- unique(ddply(groups, .(t_names), 
                function(x) data.frame(
                  t_names=x[,"t_names"], 
-                 t_group=min(x$t_group)
+                 t_group=max(x$t_group)
                  )))
   groups$t_names <- as.character(groups$t_names)
 
@@ -106,6 +110,32 @@ groups <- data.frame(t_names, t_group,
 # Double check people not in a group aren't with a guest
 notingroup
 
+## Put not in group with guests in as groups of two
+  # last group
+  last_group <- as.numeric(max(groups$t_group))+1
+  # 
+  notingroup_guests <- notingroup[grep("'s guest", notingroup)]
+  notingroup_hosts <- unlist(strsplit(notingroup_guests, 
+                                      split="'s guest", 
+                                      fixed=TRUE))
+  notingroup_withguest <- c(notingroup_hosts,notingroup_guests)
+    # in right order
+    notingroup_withguest <- notingroup_withguest[order(notingroup_withguest)]
+  # as data frame
+  notingroup_withguest <- data.frame(t_names=notingroup_withguest,
+                                     t_group=rep(
+                                       last_group:((length(notingroup_withguest)/2)+last_group-1),
+                                       each=2),
+                                     sum=rep(2,length(notingroup_withguest)))
+
+  #### ADD TO GROUPS
+  groups <- rbind(groups,notingroup_withguest)
+
+  ## Not in group - and not with guest!
+  notingroup <- notingroup[!(notingroup %in% notingroup_withguest$t_names)]
+  
+  
+
 ################################
 ## Algorithm                  ##
 ################################
@@ -118,18 +148,18 @@ allseats$guest <- NA
 
 ## add back in fellow seats
 for(i in 1:fellow_HT){
-  allseats$guest[10+i] <- "FELLOW"
+  allseats$guest[i] <- "FELLOW"
 }
 for(i in 1:fellow_2HT){
-  allseats$guest[20+i] <- "FELLOW"
+  allseats$guest[hightable+i] <- "FELLOW"
 }
 
 # count free spaces
   allseats$free <- ifelse(is.na(allseats$guest),
                            1,0)
-  allseats$total_free <- as.numeric(
-    ave(allseats$free, allseats$allseats, FUN=sum)
-  )
+  allseats$total_free <-  ave(allseats$free, allseats$allseats, 
+                              FUN=sum)
+
   # sort and put biggest free table at the top
   allseats <- allseats[with(allseats, order(-total_free,allseats,
                                            free)),]
